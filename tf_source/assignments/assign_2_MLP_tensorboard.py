@@ -5,18 +5,18 @@ import glob
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import OneHotEncoder
+
 tf.set_random_seed(42)
 
 ##---
 # includes top level module
-dname, fname = os.path.split(os.path.abspath("__file__"))
+dname, fname = os.path.split(os.path.dirname(os.path.abspath("__file__")))
 sys.path.append(dname)
 from generate_batch import BatchGen
 ##---
 
 def get_mnist_data():
-
-    dirname, _ = os.path.split(os.path.dirname(os.path.abspath("__file__")))
+    dirname, _ = os.path.split(os.path.dirname(os.path.dirname(os.path.abspath("__file__"))))
     data_dir = os.path.join(dirname, "data")
     MNIST_dir = os.path.join(data_dir, "MNIST")
 
@@ -38,7 +38,7 @@ def get_mnist_data():
 
         return X_train, y_train, X_test, y_test
     else:
-        raise IOError("Path not found!")
+        raise IOError("Path: {0} not found!".format(MNIST_dir))
 
 IMG_SIZE    = 28
 IMG_PIXELS = IMG_SIZE * IMG_SIZE
@@ -101,6 +101,8 @@ optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
 
 # initialize the variables
 init = tf.global_variables_initializer()
+saver = tf.train.Saver()
+
 dataset = BatchGen(X_train, y_train)
 with tf.Session() as session:
 #    session.graph.finalize() # this doesn't work :/
@@ -128,5 +130,7 @@ with tf.Session() as session:
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
     feed_dict_test = {X: X_test,
                       y: y_test}
+
+    save_path = saver.save(session, 'models/mnist/mlp_mnist.ckpt')
 
     print("\nTest Accuracy: {0:.4f}%".format(accuracy.eval(feed_dict_test) * 100))
