@@ -103,7 +103,7 @@ optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
 init = tf.global_variables_initializer()
 dataset = BatchGen(X_train, y_train)
 with tf.Session() as session:
-#    session.graph.finalize()
+#    session.graph.finalize() # this doesn't work :/
     session.run(init)
 
     # training cycle
