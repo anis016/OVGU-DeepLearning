@@ -1,2 +1,3 @@
 data/*
 tf_source/assignments/models/*
+tf_source/assignments/tf_logs/*

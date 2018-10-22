@@ -5,8 +5,13 @@ import glob
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import OneHotEncoder
+from datetime import datetime
 
 tf.set_random_seed(42)
+
+now = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+root_logdir = "tf_logs"
+logdir = "{0}/run-{1}".format(root_logdir, now)
 
 ##---
 # includes top level module
@@ -59,33 +64,49 @@ y_test  = onehot_encoder.fit_transform(y_test).toarray()
 
 # placeholder graph for the input
 X = tf.placeholder(dtype=tf.float32, shape=(None, n_inputs), name='X')
-y = tf.placeholder(dtype=tf.float32, shape=(None, num_classes), name='y')
+X_image = tf.reshape(X, [-1, 28, 28, 1])
+tf.summary.image("input", X_image, 3)   # add image summary
 
-def multilayer_perceptron(x, weights, biases):
-    # 1st hidden layer
-    layer_1 = tf.add(tf.matmul(x, weights['h1']), biases['b1'])
-    layer_1 = tf.nn.relu(layer_1)
+y = tf.placeholder(dtype=tf.float32, shape=(None, num_classes), name='labels')
 
-    # 2nd hidden layer
-    layer_2 = tf.add(tf.matmul(layer_1, weights['h2']), biases['b2'])
-    layer_2 = tf.nn.relu(layer_2)
+def multilayer_perceptron(x, weights, biases, name="MLP"):
 
-    # output layer
-    out_layer = tf.add(tf.matmul(layer_2, weights['out']), biases['out'])
-    return out_layer
+    with tf.name_scope(name):
+        # 1st hidden layer
+        layer_1 = tf.add(tf.matmul(x, weights['h1']), biases['b1'])
+        layer_1 = tf.nn.relu(layer_1)
+        tf.summary.histogram("activations", layer_1) # add histogram summary
+
+        # 2nd hidden layer
+        layer_2 = tf.add(tf.matmul(layer_1, weights['h2']), biases['b2'])
+        layer_2 = tf.nn.relu(layer_2)
+        tf.summary.histogram("activations", layer_2) # add histogram summary
+
+        # output layer
+        out_layer = tf.add(tf.matmul(layer_2, weights['out']), biases['out'])
+
+        return out_layer
 
 # store weights & biases
-weights = {
-    'h1': tf.Variable(tf.random_normal([n_inputs, n_hidden_1])),
-    'h2': tf.Variable(tf.random_normal([n_hidden_1, n_hidden_2])),
-    'out': tf.Variable(tf.random_normal([n_hidden_2, num_classes]))
-}
+with tf.name_scope("weights"):
+    weights = {
+        'h1': tf.Variable(tf.random_normal([n_inputs, n_hidden_1]), name="W_h1"),
+        'h2': tf.Variable(tf.random_normal([n_hidden_1, n_hidden_2]), name="W_h2"),
+        'out': tf.Variable(tf.random_normal([n_hidden_2, num_classes]), name="W_out")
+    }
+    tf.summary.histogram("weights", weights['h1'])  # add histogram summary
+    tf.summary.histogram("weights", weights['h2'])  # add histogram summary
+    tf.summary.histogram("weights", weights['out'])  # add histogram summary
 
-biases = {
-    'b1': tf.Variable(tf.random_normal([n_hidden_1])),
-    'b2': tf.Variable(tf.random_normal([n_hidden_2])),
-    'out': tf.Variable(tf.random_normal([num_classes])),
-}
+with tf.name_scope("biases"):
+    biases = {
+        'b1': tf.Variable(tf.random_normal([n_hidden_1]), name="B_b1"),
+        'b2': tf.Variable(tf.random_normal([n_hidden_2]), name="B_b2"),
+        'out': tf.Variable(tf.random_normal([num_classes]), name="B_out"),
+    }
+    tf.summary.histogram("biases", biases['b1'])  # add histogram summary
+    tf.summary.histogram("biases", biases['b2'])  # add histogram summary
+    tf.summary.histogram("biases", biases['out'])  # add histogram summary
 
 learning_rate  = 0.01
 training_epoch = 10
@@ -93,19 +114,41 @@ batch_size     = 128
 n_batches      = int(np.ceil(len(y_train) / batch_size))
 
 # construct the model
-y_pred = multilayer_perceptron(X, weights, biases)
+y_pred = multilayer_perceptron(X, weights, biases, name="MLP")
 
-# define loss and optimizer
-cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=y_pred, labels=y))
-optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
+# define loss
+with tf.name_scope("xentropy"):
+    cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=y_pred, labels=y))
+    tf.summary.scalar("cross_entropy", cost) # add scalar summary
+
+# define optimizer
+with tf.name_scope("train"):
+    optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
+
+# test model
+with tf.name_scope("accuracy"):
+    correct_prediction = tf.equal(tf.argmax(y_pred, 1), tf.argmax(y, 1))
+
+    # calculate accuracy
+    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+    tf.summary.scalar("accuracy", accuracy) # add scalar summary
 
 # initialize the variables
 init = tf.global_variables_initializer()
-saver = tf.train.Saver()
+
+# merge all the summary
+summary = tf.summary.merge_all()
+
+# for saving the model
+# saver = tf.train.Saver()
+
+# for tensorboard visualization
+file_writer = tf.summary.FileWriter(logdir)
 
 dataset = BatchGen(X_train, y_train)
 with tf.Session() as session:
-#    session.graph.finalize() # this doesn't work :/
+    file_writer.add_graph(session.graph) # adding the summary graph
+    session.graph.finalize()
     session.run(init)
 
     # training cycle
@@ -121,16 +164,11 @@ with tf.Session() as session:
 
         # display logs per epoch step
         print('Epoch: {0}, cost: {1:.4f}'.format(epoch, avg_cost))
+        summary_str = summary.eval(feed_dict={X: X_batch,
+                                              y: y_batch})
+        file_writer.add_summary(summary_str, epoch)
 
+        print("Test Accuracy: {0:.4f}%\n".format(accuracy.eval(feed_dict={X: X_test,
+                                                                          y: y_test}) * 100))
 
-    # test model
-    correct_prediction = tf.equal(tf.argmax(y_pred, 1), tf.argmax(y, 1))
-
-    # calculate accuracy
-    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-    feed_dict_test = {X: X_test,
-                      y: y_test}
-
-    save_path = saver.save(session, 'models/mnist/mlp_mnist.ckpt')
-
-    print("\nTest Accuracy: {0:.4f}%".format(accuracy.eval(feed_dict_test) * 100))
+file_writer.close()
