@@ -99,13 +99,19 @@ y_pred = multilayer_perceptron(X, weights, biases)
 cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=y_pred, labels=y))
 optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
 
+# test model
+correct_prediction = tf.equal(tf.argmax(y_pred, 1), tf.argmax(y, 1))
+
+# calculate accuracy
+accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+
 # initialize the variables
 init = tf.global_variables_initializer()
 saver = tf.train.Saver()
 
 dataset = BatchGen(X_train, y_train)
 with tf.Session() as session:
-#    session.graph.finalize() # this doesn't work :/
+    session.graph.finalize()
     session.run(init)
 
     # training cycle
@@ -121,15 +127,7 @@ with tf.Session() as session:
 
         # display logs per epoch step
         print('Epoch: {0}, cost: {1:.4f}'.format(epoch, avg_cost))
+        print("Test Accuracy: {0:.4f}%\n".format(accuracy.eval(feed_dict={X: X_test,
+                                                                          y: y_test}) * 100))
 
-
-    # test model
-    correct_prediction = tf.equal(tf.argmax(y_pred, 1), tf.argmax(y, 1))
-
-    # calculate accuracy
-    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-    feed_dict_test = {X: X_test,
-                      y: y_test}
-
-    save_path = saver.save(session, 'models/mnist/mlp_mnist.ckpt')
-    print("\nTest Accuracy: {0:.4f}%".format(accuracy.eval(feed_dict_test) * 100))
+        # save_path = saver.save(session, 'models/mnist/mlp_mnist.ckpt')
