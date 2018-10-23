@@ -45,7 +45,8 @@ def get_mnist_data():
     else:
         raise IOError("Path: {0} not found!".format(MNIST_dir))
 
-IMG_SIZE    = 28
+
+IMG_SIZE   = 28
 IMG_PIXELS = IMG_SIZE * IMG_SIZE
 
 # network parameters
@@ -56,11 +57,11 @@ num_classes = 10 # number of outputs
 
 # get the normalized MNIST data
 X_train, y_train, X_test, y_test = get_mnist_data()
-
 # convert sequence label to one-hot encoded label
-onehot_encoder = OneHotEncoder(categorical_features = [0]) # [0] -> which axis to be one-hot encoded?
+onehot_encoder = OneHotEncoder(categorical_features=[0])  # [0] -> which axis to be one-hot encoded?
 y_train = onehot_encoder.fit_transform(y_train).toarray()
-y_test  = onehot_encoder.fit_transform(y_test).toarray()
+y_test = onehot_encoder.fit_transform(y_test).toarray()
+
 
 # placeholder graph for the input
 X = tf.placeholder(dtype=tf.float32, shape=(None, n_inputs), name='X')
@@ -152,7 +153,7 @@ with tf.Session() as session:
     session.run(init)
 
     # training cycle
-    for epoch in range(training_epoch):
+    for epoch in range(training_epoch ):
         avg_cost = 0
         for batch_index in range(n_batches):
             X_batch, y_batch = dataset.next_batch(batch_size, shuffle=True)
@@ -161,13 +162,14 @@ with tf.Session() as session:
 
             # compute average loss
             avg_cost += c / n_batches
+            if batch_index % 10 == 0:
+                summary_str = summary.eval(feed_dict={X: X_batch,
+                                                      y: y_batch})
+                step = epoch * n_batches + batch_index
+                file_writer.add_summary(summary_str, step)
 
         # display logs per epoch step
         print('Epoch: {0}, cost: {1:.4f}'.format(epoch, avg_cost))
-        summary_str = summary.eval(feed_dict={X: X_batch,
-                                              y: y_batch})
-        file_writer.add_summary(summary_str, epoch)
-
         print("Test Accuracy: {0:.4f}%\n".format(accuracy.eval(feed_dict={X: X_test,
                                                                           y: y_test}) * 100))
 
