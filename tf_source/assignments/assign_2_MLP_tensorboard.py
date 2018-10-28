@@ -5,13 +5,15 @@ import glob
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import OneHotEncoder
-from datetime import datetime
-
 tf.set_random_seed(42)
 
+## for tensorboard visualization
+from datetime import datetime
 now = datetime.utcnow().strftime("%Y%m%d%H%M%S")
 root_logdir = "tf_logs"
 logdir = "{0}/run-{1}".format(root_logdir, now)
+file_writer = tf.summary.FileWriter(logdir)
+##
 
 ##---
 # includes top level module
@@ -142,9 +144,6 @@ summary = tf.summary.merge_all()
 
 # for saving the model
 # saver = tf.train.Saver()
-
-# for tensorboard visualization
-file_writer = tf.summary.FileWriter(logdir)
 
 dataset = BatchGen(X_train, y_train)
 with tf.Session() as session:

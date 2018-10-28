@@ -38,9 +38,10 @@ def get_mnist_data():
 def nn_model(inputs):
     fc1 = tf.layers.dense(inputs, units=256, activation=tf.nn.relu)
     fc2 = tf.layers.dense(fc1, units=256, activation=tf.nn.relu)
-    fc3 = tf.layers.dense(fc2, units=10)
 
-    return fc3
+    out = tf.layers.dense(fc2, units=10)
+
+    return out
 
 # get the normalized MNIST data
 X_train, y_train, X_test, y_test = get_mnist_data()
@@ -90,7 +91,7 @@ with tf.Session() as session:
     session.run(init)
 
     # training cycle
-    # initialize the iterator
+    # initialize the training iterator
     session.run(training_init_op)
     for epoch in range(training_epoch + 1):
         l, _, acc = session.run([loss, optimizer, accuracy])
@@ -98,7 +99,7 @@ with tf.Session() as session:
             print("Epoch: {0:2d}, loss: {1:.4f}, training accuracy: {2:.4f}%".format(epoch, l, acc * 100))
 
     # validation cycle
-    # re-initialize the iterator
+    # initialize the validation iterator
     session.run(validation_init_op)
 
     avg_acc = 0
