@@ -5,9 +5,9 @@ import pandas as pd
 from sklearn.preprocessing import OneHotEncoder
 tf.set_random_seed(42)
 
-learning_rate  = 0.01
+learning_rate  = 0.001
 batch_size     = 128
-training_epoch = 50
+training_epoch = 100
 
 def get_mnist_data():
 
@@ -96,7 +96,7 @@ with tf.Session() as session:
     for epoch in range(training_epoch + 1):
         l, _, acc = session.run([loss, optimizer, accuracy])
         if epoch % 10 == 0:
-            print("Epoch: {0:2d}, loss: {1:.4f}, training accuracy: {2:.4f}%".format(epoch, l, acc * 100))
+            print("Epoch: {0:3d}, loss: {1:.4f}, training accuracy: {2:.4f}%".format(epoch, l, acc * 100))
 
     # validation cycle
     # initialize the validation iterator
