@@ -50,3 +50,18 @@ Convolutional Neural Networks
 MNIST Accuracy: 97.3600%
 
 Fashion MNIST Accuracy: 83.1400%
+
+### Assignment 4
+Using Estimator for
+
+Details: [Assignment 4](https://ovgu-ailab.github.io/idl2018/ass4.html)
+
+#### Preparing the MNIST and Fashion-MNIST dataset
+1. Download the raw MNIST files from [`Yann LeCun’s website`](http://yann.lecun.com/exdb/mnist/)
+2. Unzip the data files.
+3. Copy the files in to `course_intro-to-dl/data/MNIST`
+4. Download the [`coversion.py`](https://ovgu-ailab.github.io/idl2018/assignments/1/conversions.py) script.
+5. Run `python conversions.py -c -n`
+
+#### Model
+Convolutional Neural Networks
