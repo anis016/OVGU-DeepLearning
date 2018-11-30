@@ -65,3 +65,6 @@ Details: [Assignment 4](https://ovgu-ailab.github.io/idl2018/ass4.html)
 
 #### Model
 Convolutional Neural Networks
+
+
+## STOPPED, because I won't be working in Tensorflow anymore. PyTorch is way better and more intuitive.
